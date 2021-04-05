@@ -22,7 +22,13 @@ class Scrapping:
         filenames = os.listdir(inputpath)
         filenames.sort(key=lambda f: int(re.sub('\D', '', f)))
 
+        flag = True
         for filename in filenames:
+            if filename == "S11A49P100.txt":
+                flag = False
+            if flag:
+                continue
+
             inputfilename = inputpath + "/" + filename
             outfilename = outpath + "/" + filename.replace(".txt", ".csv")
             failedfilename = failedpath + "/" + filename
