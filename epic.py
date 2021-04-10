@@ -24,7 +24,7 @@ class Scrapping:
 
         flag = True
         for filename in filenames:
-            if filename == "S11A49P100.txt":
+            if filename == "S11A49P127.txt":
                 flag = False
             if flag:
                 continue
@@ -32,6 +32,7 @@ class Scrapping:
             inputfilename = inputpath + "/" + filename
             outfilename = outpath + "/" + filename.replace(".txt", ".csv")
             failedfilename = failedpath + "/" + filename
+
 
             print(self.get_current_time(), filename)
             self.process_file(inputfilename, outfilename, failedfilename)
