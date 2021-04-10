@@ -22,7 +22,13 @@ class Scrapping:
         filenames = os.listdir(inputpath)
         filenames.sort(key=lambda f: int(re.sub('\D', '', f)))
 
+        flag = True
         for filename in filenames:
+            if filename == "S11A60P63.txt":
+                flag = False
+            if flag:
+                continue
+
             inputfilename = inputpath + "/" + filename
             outfilename = outpath + "/" + filename.replace(".txt", ".csv")
             failedfilename = failedpath + "/" + filename
@@ -82,4 +88,4 @@ class Scrapping:
 if __name__ == "__main__":
     scrap = Scrapping()
     # scrap.get_data('UVF0905497')
-    scrap.start('epics2', 'final2', 'failed2')
+    scrap.start('epics1', 'final1', 'failed1')
