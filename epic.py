@@ -22,9 +22,9 @@ class Scrapping:
         filenames = os.listdir(inputpath)
         filenames.sort(key=lambda f: int(re.sub('\D', '', f)))
 
-        flag = True
+        flag = False
         for filename in filenames:
-            if filename == "S11A60P63.txt":
+            if filename == "S11A60P4.txt":
                 flag = False
             if flag:
                 continue
@@ -42,17 +42,18 @@ class Scrapping:
         self.outwriter = csv.writer(self.outfile)
         self.failedfile = open(failedfilename, 'w')
 
-        self.outwriter.writerow(["epic_id", "constituency", "booth", "section", "slno", "votername", "gender", "age"])
+        self.outwriter.writerow(["epic_id", "serial_no", "success", "constituency", "booth", "section", "slno", "votername", "gender", "age"])
         cnt = 0
+        self.serial_no = 0
         while True:
             line = self.inputfile.readline()
             if not line:
                 break
-            epic_id = line.strip()
+            arr = line.strip().split(',')
+            epic_id = arr[0]
+            serial_no = arr[1]
             epic_id = epic_id.replace("O", "0")
-            if epic_id == "":
-                continue
-            ret = self.get_data(epic_id)
+            ret = self.get_data(epic_id, serial_no)
 
             cnt += 1
             if cnt % 100 == 0:
@@ -62,11 +63,17 @@ class Scrapping:
         self.outfile.close()
         self.inputfile.close()
 
-    def get_data(self, epic_id):
+    def get_data(self, epic_id, serial_no):
         data = {'EPIC1' : epic_id}
         r = self.session.post(self.base_url, json=data, headers={})
         data = json.loads(r.content)
         info = data["d"]
+        if epic_id == "":
+            print("x :", epic_id, serial_no) 
+            self.failedfile.write(epic_id + "," + serial_no + "\n")
+            self.outwriter.writerow([epic_id, serial_no, 0, "", "", "", "", "", "", ""])
+            return False
+
         try:
             constituency = re.search('<F1>(.*?)</F1>', info).group(1).strip()
             booth = re.search('<F2>(.*?)</F2>', info).group(1).strip()
@@ -76,11 +83,12 @@ class Scrapping:
             gender = re.search('<F12>(.*?)</F12>', info).group(1).strip()
             age = re.search('<F13>(.*?)</F13>', info).group(1).strip()
         except:
-            print("x :", epic_id) 
-            self.failedfile.write(epic_id + "\n")
+            print("x :", epic_id, serial_no) 
+            self.failedfile.write(epic_id + "," + serial_no + "\n")
+            self.outwriter.writerow([epic_id, serial_no, 0, "", "", "", "", "", "", ""])
             return False
 
-        self.outwriter.writerow([epic_id, constituency, booth, section, slno, votername, gender, age])
+        self.outwriter.writerow([epic_id, serial_no, 1, constituency, booth, section, slno, votername, gender, age])
         return True
     def get_current_time(self):
         return datetime.now().strftime("%H:%M:%S")
