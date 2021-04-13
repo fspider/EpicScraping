@@ -24,7 +24,11 @@ class Scrapping:
 
         flag = True
         for filename in filenames:
+<<<<<<< HEAD
             if filename == "S11A49P127.txt":
+=======
+            if filename == "S11A60P63.txt":
+>>>>>>> ebebdada32a3d3bf352ea2d7b14db3b060ecd7cc
                 flag = False
             if flag:
                 continue
@@ -89,4 +93,4 @@ class Scrapping:
 if __name__ == "__main__":
     scrap = Scrapping()
     # scrap.get_data('UVF0905497')
-    scrap.start('epics2', 'final2', 'failed2')
+    scrap.start('epics1', 'final1', 'failed1')
