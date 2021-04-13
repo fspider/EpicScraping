@@ -24,15 +24,7 @@ class Scrapping:
 
         flag = False
         for filename in filenames:
-<<<<<<< HEAD
             if filename == "S11A60P4.txt":
-=======
-<<<<<<< HEAD
-            if filename == "S11A49P127.txt":
-=======
-            if filename == "S11A60P63.txt":
->>>>>>> ebebdada32a3d3bf352ea2d7b14db3b060ecd7cc
->>>>>>> 3a29c6067178353718e7d753e0ec89683e6567eb
                 flag = False
             if flag:
                 continue
