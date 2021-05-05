@@ -14,7 +14,7 @@ class Scrapping:
         self.domain = 'http://www.ceo.kerala.gov.in'
         self.base_url = self.domain + '/electoralrolls.html'
         # self.list_url = self.domain + '/electoralroll/partsListAjax.html?currentYear=2021&distNo=6&lacNo=60&sEcho=1&iColumns=5&sColumns=&iDisplayStart=0&iDisplayLength=500&iSortingCols=1&iSortCol_0=0&sSortDir_0=asc&bSortable_0=false&bSortable_1=false&bSortable_2=false&bSortable_3=false&bSortable_4=false&undefined=undefined'
-        self.list_url = self.domain +   '/electoralroll/partsListAjax.html?currentYear=2021&distNo=6&lacNo=49&sEcho=1&iColumns=5&sColumns=&iDisplayStart=0&iDisplayLength=500&iSortingCols=1&iSortCol_0=0&sSortDir_0=asc&bSortable_0=false&bSortable_1=false&bSortable_2=false&bSortable_3=false&bSortable_4=false&undefined=undefined'
+        self.list_url = self.domain +   '/electoralroll/partsListAjax.html?currentYear=2021&distNo={}&lacNo={}&sEcho=1&iColumns=5&sColumns=&iDisplayStart=0&iDisplayLength=500&iSortingCols=1&iSortCol_0=0&sSortDir_0=asc&bSortable_0=false&bSortable_1=false&bSortable_2=false&bSortable_3=false&bSortable_4=false&undefined=undefined'
         self.session = requests.Session()
 
         self.api_key = "e00923a245a141aabc38bf7031e7d35b"
@@ -22,7 +22,7 @@ class Scrapping:
         self.client = AnticaptchaClient(self.api_key)
         self.site_key = None
         self.task = None
-
+        self.laclist = [5, 16, 19, 32, 48, 60, 73, 87, 92, 101, 110, 115, 126, 140]
     def extract_url(self, s):
         match = re.search(r'href=[\'"]?([^\'" >]+)', s)
         if match:
@@ -32,7 +32,22 @@ class Scrapping:
         return ""
 
     def start(self):
-        r = self.session.get(self.list_url)
+        lacNo = 2
+        for i in range(0, 14):
+            distNo = i + 1
+            while lacNo <= self.laclist[i]:
+                self.start_lac(distNo, lacNo)
+                lacNo += 1
+                if lacNo == 20:
+                    return
+
+    def start_lac(self, distNo, lacNo):
+        self.save_path = "pdfs{}".format(lacNo)
+        self.create_folder_if_not_exists(self.save_path)
+
+        list_url = self.list_url.format(distNo, lacNo)
+        r = self.session.get(list_url)
+
         print(self.session.cookies.get_dict())
         # self.cookie = "PHPSESSID={}; rufc=false".format(self.session.cookies.get_dict()['PHPSESSID'])
         self.cookie = ""
@@ -52,6 +67,10 @@ class Scrapping:
             self.download_pdf()
             cnt += 1
 
+    def create_folder_if_not_exists(self, foldername):
+        if not os.path.exists(foldername):
+            os.makedirs(foldername)
+
     def download_pdf(self):
         # self.pdf_url = "http://www.ceo.kerala.gov.in:80/pdf/voterslist/2021/FINAL/KLA2021/AC060/S11A60P1.pdf"
 
@@ -70,7 +89,7 @@ class Scrapping:
         self.download_file()
 
     def download_file(self):
-        local_filename = "pdfs2/" + self.pdf_url.split('/')[-1]
+        local_filename = self.save_path + "/" + self.pdf_url.split('/')[-1]
         # NOTE the stream=True parameter below
         with requests.get(self.pdf_download_url, stream=True) as r:
             r.raise_for_status()

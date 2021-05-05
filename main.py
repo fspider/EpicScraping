@@ -66,7 +66,7 @@ class EpicReader:
             cnt += 1
             # page.save('out2/out{}.jpg'.format(cnt), 'JPEG')
             # print("{}.jpg saved".format(cnt))
-            savepath = 'out2/tmp.jpg'
+            savepath = 'tmp.jpg'
             page.save(savepath, 'JPEG')
             print("[process_pdf] Processing {}th page".format(cnt))
             self.process_img(savepath)
@@ -143,12 +143,12 @@ class EpicReader:
 
         filenames = os.listdir(path)
         filenames.sort(key=lambda f: int(re.sub('\D', '', f)))
-        flag = True
+        flag = False
         for name in filenames:
-            if name == "S11A60P19.pdf":
-                flag = False
-            if flag:
-                continue
+            # if name == "S11A60P19.pdf":
+            #     flag = False
+            # if flag:
+            #     continue
 
             full_pdf_path = path + name
             save_file_path = savepath + name.replace(".pdf", ".txt")

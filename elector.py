@@ -9,7 +9,7 @@ import os
 import numpy as np
 from bs4 import BeautifulSoup
 
-pytesseract.pytesseract.tesseract_cmd = 'D:\\git\\Tesseract-OCR\\tesseract.exe'
+# pytesseract.pytesseract.tesseract_cmd = 'D:\\git\\Tesseract-OCR\\tesseract.exe'
 
 
 class Scrapping:
@@ -40,9 +40,9 @@ class Scrapping:
         filenames = os.listdir(inputpath)
         filenames.sort(key=lambda f: int(re.sub('\D', '', f)))
 
-        flag = False
+        flag = True
         for filename in filenames:
-            if filename == "S11A49P127.txt":
+            if filename == "S11A49P77.txt":
                 flag = False
             if flag:
                 continue
@@ -54,6 +54,8 @@ class Scrapping:
 
             print(self.get_current_time(), filename)
             self.process_file(inputfilename, outfilename, failedfilename)
+            if filename == "S11A49P150.txt":
+                break
 
     def process_file(self, inputfilename, outfilename, failedfilename):
         self.inputfile = open(inputfilename, 'r')
@@ -61,14 +63,16 @@ class Scrapping:
         self.outwriter = csv.writer(self.outfile)
         self.failedfile = open(failedfilename, 'w')
 
-        self.outwriter.writerow(['state', 'ac_acn', 'pc', 'name', 'name_v1', 'gender', 'age', 'epic_no', 'father_name', 'father_name_v1', 'part_number', 'part_name', 'serial_no', 'polling_station'])
+        self.outwriter.writerow(['success', 'state', 'ac_acn', 'pc', 'name', 'name_v1', 'gender', 'age', 'epic_no', 'father_name', 'father_name_v1', 'part_number', 'part_name', 'serial_no', 'polling_station'])
 
         cnt = 0
         while True:
             line = self.inputfile.readline()
             if not line:
                 break
-            epic_id = line.strip()
+            arr = line.strip().split(',')
+            epic_id = arr[0]
+            self.serial_no = arr[1]
             epic_id = epic_id.replace("O", "0")
             if epic_id == "":
                 continue
@@ -78,6 +82,7 @@ class Scrapping:
                 print(self.get_current_time(), cnt, epic_id)
 
             ret = self.process_epic(epic_id)
+            self.outfile.flush()
 
 
         self.failedfile.close()
@@ -86,8 +91,7 @@ class Scrapping:
 
     def process_epic(self, epic_id):
         if self.prev_captcha != "":
-            self.get_data(self.prev_captcha, epic_id)
-            return
+            return self.get_data(self.prev_captcha, epic_id)
 
         cnt = 0
         while True:
@@ -95,7 +99,8 @@ class Scrapping:
             print("----> Trying ", cnt)
             if self.solve(epic_id):
                 break
-    
+        return True
+
     def solve(self, epic_id):
         r = self.session.get(self.base_url, headers={})
         # file = open("captcha.jpg", "wb")
@@ -171,13 +176,16 @@ class Scrapping:
     def get_data(self, txtCaptcha, epic_id):
         url = self.get_data_url.format(epic_id, 1, 10, txtCaptcha)
         # print(url)
+        print("->1")
         r = self.session.get(url, headers = {})
+        print("->2")
         try:
             docs = json.loads(r.content)['response']['docs']
         except:
             return False
         
         if len(docs) == 0:
+            self.outwriter.writerow([0, "", "", "", "", "", "", "", epic_id, "", "", "", "", self.serial_no, ""])
             self.failedfile.write(epic_id + "\n")
             return True
 
@@ -209,7 +217,9 @@ class Scrapping:
             'rln_type' : res['rln_type'],
         }
         # print(data)
+        print("->3")
         r = self.session.post(self.get_detail_url, data = data, headers = {})
+        print("->4")
         html = r.content.decode('utf-8')
         # print(html)
         soup=BeautifulSoup(html,'lxml')
@@ -229,7 +239,7 @@ class Scrapping:
         serial_no = res['slno_inpart']
         polling_station = res['ps_name'] + " - " + res['ps_no']
         # polling_date = trs[14].find_all('td')[1].text.strip()
-        self.outwriter.writerow([state, ac_acn, pc, name, name_v1, gender, age, epic_no, father_name, father_name_v1, part_number, part_name, serial_no, polling_station])
+        self.outwriter.writerow([1, state, ac_acn, pc, name, name_v1, gender, age, epic_no, father_name, father_name_v1, part_number, part_name, serial_no, polling_station])
         return True
 
     def cut_image(self, img, q, id):
@@ -307,6 +317,56 @@ class Scrapping:
     def get_current_time(self):
         return datetime.now().strftime("%H:%M:%S")
 
+    def merge(self, txtpath, csvpath, outpath):
+        self.create_folder_if_not_exists(outpath)
+
+        filenames = os.listdir(txtpath)
+        filenames.sort(key=lambda f: int(re.sub('\D', '', f)))
+
+        flag = True
+        for filename in filenames:
+            if filename == "S11A60P37.txt":
+                flag = False
+            if flag:
+                continue            
+            txtinputfilename = txtpath + "/" + filename
+            csvinputfilename = csvpath + "/" + filename.replace(".txt", ".csv")
+            outfilename = outpath + "/" + filename.replace(".txt", ".csv")
+
+            print(self.get_current_time(), filename)
+            self.merge_file(txtinputfilename, csvinputfilename, outfilename, filename.replace(".txt", ".pdf"))
+    def merge_file(self, txtinputfilename, csvinputfilename, outfilename, filename):
+        self.txtinputfile = open(txtinputfilename, 'r', encoding="utf-8")
+        self.csvinputfile = open(csvinputfilename, 'r', encoding="utf-8")
+        self.reader = csv.reader(self.csvinputfile)
+        self.outfile = open(outfilename, 'w', newline='', encoding="utf-8")
+        self.writer = csv.writer(self.outfile)
+
+        cnt = 0
+        for row in self.reader:
+            cnt += 1
+            print(cnt)
+            if cnt == 1:
+                row.insert(0, "filename")
+                row.insert(14, "pdf_serial_no")
+                row[15] = "web_serial_no"
+            else:
+                line = self.txtinputfile.readline()
+                arr = line.strip().split(',')
+                epic_id = arr[0]
+                serial_no = arr[1]
+                epic_id = epic_id.replace("O", "0")                
+                if not line:
+                    break
+                
+                row.insert(0, filename)
+                row.insert(14, serial_no)
+            self.writer.writerow(row)
+
+        self.outfile.close()
+        self.csvinputfile.close()
+        self.txtinputfile.close()
+
 if __name__ == "__main__":
     scrap = Scrapping()
-    scrap.start("epics1", "pass1", "failed1")
+    scrap.merge("epics1", "pass1", "save1")
