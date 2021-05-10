@@ -32,13 +32,13 @@ class Scrapping:
         return ""
 
     def start(self):
-        lacNo = 2
+        lacNo = 12
         for i in range(0, 14):
             distNo = i + 1
             while lacNo <= self.laclist[i]:
                 self.start_lac(distNo, lacNo)
                 lacNo += 1
-                if lacNo == 20:
+                if lacNo == 15:
                     return
 
     def start_lac(self, distNo, lacNo):

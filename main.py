@@ -1,4 +1,4 @@
-from pdf2image import convert_from_path
+from pdf2image import pdfinfo_from_path, convert_from_path
 
 import configparser
 import cv2
@@ -15,21 +15,24 @@ class EpicReader:
 
         self.w = int(self.config['DEFAULT']['w'])
         self.h = int(self.config['DEFAULT']['h'])
-        self.sx = int(self.config['DEFAULT']['sx'])
-        self.sy = int(self.config['DEFAULT']['sy'])
-        self.sw = int(self.config['DEFAULT']['sw'])
-        self.sh = int(self.config['DEFAULT']['sh'])
+        self.w1 = int(self.config['DEFAULT']['w1'])
+        self.h1 = int(self.config['DEFAULT']['h1'])
 
-        self.sx2 = int(self.config['DEFAULT']['sx2'])
-        self.sy2 = int(self.config['DEFAULT']['sy2'])
-        self.sw2 = int(self.config['DEFAULT']['sw2'])
-        self.sh2 = int(self.config['DEFAULT']['sh2'])
+        self.sx = int(int(self.config['DEFAULT']['sx']) * self.w / self.w1)
+        self.sy = int(int(self.config['DEFAULT']['sy']) * self.h / self.h1)
+        self.sw = int(int(self.config['DEFAULT']['sw']) * self.w / self.w1)
+        self.sh = int(int(self.config['DEFAULT']['sh']) * self.h / self.h1)
 
-        self.px1 = int(self.config['DEFAULT']['px1'])
-        self.px2 = int(self.config['DEFAULT']['px2'])
+        self.sx2 = int(int(self.config['DEFAULT']['sx2']) * self.w / self.w1)
+        self.sy2 = int(int(self.config['DEFAULT']['sy2']) * self.h / self.h1)
+        self.sw2 = int(int(self.config['DEFAULT']['sw2']) * self.w / self.w1)
+        self.sh2 = int(int(self.config['DEFAULT']['sh2']) * self.h / self.h1)
 
-        self.dw = int(self.config['DEFAULT']['dw'])
-        self.dh = int(self.config['DEFAULT']['dh'])
+        self.px1 = int(int(self.config['DEFAULT']['px1']) * self.w / self.w1)
+        self.px2 = int(int(self.config['DEFAULT']['px2']) * self.h / self.h1)
+
+        self.dw = int(int(self.config['DEFAULT']['dw']) * self.w / self.w1)
+        self.dh = int(int(self.config['DEFAULT']['dh']) * self.h / self.h1)
 
         self.cntw = int(self.config['DEFAULT']['cntw'])
         self.cnth = int(self.config['DEFAULT']['cnth'])
@@ -48,7 +51,7 @@ class EpicReader:
                     fFound = False
                     break 
             if fFound is True:
-                if len(ret)>0 and ret[-1] + 20 > h:
+                if len(ret)>0 and ret[-1] + 20 >= h:
                     ret.pop()
                 ret.append(h)
         # print(ret)
@@ -57,20 +60,36 @@ class EpicReader:
     def process_pdf(self, filename, save_file_path):
         self.serial_no = 0
         self.outfile = open(save_file_path, "w")
-        pages = convert_from_path(filename, 500)
-        cnt = 0
-        nPages = len(pages)
-        print(self.get_current_time())
-        for i in range(2, nPages - 1):
-            page = pages[i]
-            cnt += 1
-            # page.save('out2/out{}.jpg'.format(cnt), 'JPEG')
-            # print("{}.jpg saved".format(cnt))
-            savepath = 'tmp.jpg'
-            page.save(savepath, 'JPEG')
-            print("[process_pdf] Processing {}th page".format(cnt))
-            self.process_img(savepath)
-            self.outfile.flush()
+
+        info = pdfinfo_from_path(filename, userpw=None, poppler_path=None)
+        nPages = info["Pages"]
+        page_no = 0
+        while page_no < nPages:
+            pages = convert_from_path(filename, dpi=200, first_page=page_no + 1, last_page = min(page_no + 10, nPages))
+            for page in pages:
+                page_no += 1
+                if page_no <= 2 or page_no == nPages:
+                    continue
+                savepath = 'tmp.jpg'
+                page.save(savepath, 'JPEG')
+                print("[process_pdf] Processing {}th page".format(page_no))
+                self.process_img(savepath)
+                self.outfile.flush()
+
+        # pages = convert_from_path(filename, 500)
+        # cnt = 0
+        # nPages = len(pages)
+        # print(self.get_current_time())
+        # for i in range(2, nPages - 1):
+        #     page = pages[i]
+        #     cnt += 1
+        #     # page.save('out2/out{}.jpg'.format(cnt), 'JPEG')
+        #     # print("{}.jpg saved".format(cnt))
+        #     savepath = 'tmp.jpg'
+        #     page.save(savepath, 'JPEG')
+        #     print("[process_pdf] Processing {}th page".format(cnt))
+        #     self.process_img(savepath)
+        #     self.outfile.flush()
         self.outfile.close()
         print(self.get_current_time())
 
@@ -157,6 +176,7 @@ class EpicReader:
 
 if __name__ == "__main__":
     epicReader = EpicReader()
-    epicReader.process_pdfs("pdfs1/", "epics1/")
+    for i in range(10, 15):
+        epicReader.process_pdfs("pdfs{}/".format(i), "epics{}/".format(i))
     # epicReader.process_pdf("a1.pdf", "out.txt")
     # epicReader.process_img("out/out40.jpg")
