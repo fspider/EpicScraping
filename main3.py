@@ -70,7 +70,7 @@ class EpicReader:
                 page_no += 1
                 if page_no <= 2 or page_no == nPages:
                     continue
-                savepath = 'tmp.jpg'
+                savepath = 'tmp3.jpg'
                 page.save(savepath, 'JPEG')
                 print("[process_pdf] Processing {}th page".format(page_no))
                 self.process_img(savepath)
@@ -124,7 +124,9 @@ class EpicReader:
                 red = (rst[0] + self.sw, rst[1] + self.sh)
                 # img = cv2.rectangle(img, rst, red, (255, 0, 0), 5)
                 epic_img = img[rst[1]:red[1], rst[0]:red[0]]
-                
+                # cv2.imshow('epic_img', epic_img)
+                # cv2.waitKey(0)
+
                 custom_config1 = r'--oem 3 --psm 6'
                 epic_id = pytesseract.image_to_string(epic_img, config=custom_config1)
                 epic_id = self.validate_epic(epic_id)
@@ -176,7 +178,7 @@ class EpicReader:
 
 if __name__ == "__main__":
     epicReader = EpicReader()
-    for i in range(35, 40):
+    for i in range(45, 50):
         epicReader.process_pdfs("pdfs{}/".format(i), "epics{}/".format(i))
     # epicReader.process_pdf("a1.pdf", "out.txt")
     # epicReader.process_img("out/out40.jpg")
