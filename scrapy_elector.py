@@ -281,7 +281,8 @@ class Scrapping:
             return False
         
         if len(docs) == 0:
-            self.outwriter.writerow([0, "", "", "", "", "", "", "", epic_id, "", "", "", "", self.serial_no, ""])
+            self.outwriter.
+            ([0, "", "", "", "", "", "", "", epic_id, "", "", "", "", self.serial_no, ""])
             self.failedfile.write(epic_id + "\n")
             return True
 

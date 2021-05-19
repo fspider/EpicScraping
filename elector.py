@@ -8,13 +8,17 @@ import csv
 import os
 import numpy as np
 from bs4 import BeautifulSoup
+import warnings
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
+warnings.simplefilter('ignore',InsecureRequestWarning)
 
 # pytesseract.pytesseract.tesseract_cmd = 'D:\\git\\Tesseract-OCR\\tesseract.exe'
 
 
 class Scrapping:
     def __init__(self):
-        self.base_url = 'https://electoralsearch.in/Home/GetCaptcha?image=true&id=Wed%20Apr%2007%202021%2004:50:30%20GMT+0800%20(China%20Standard%20Time)'
+        self.base_url = 'https://electoralsearch.in/Home/GetCaptcha?image=true&id=Wed%20May%2019%202021%2019:47:21%20GMT+0800%20(China%20Standard%20Time)'
         self.get_data_url = 'https://electoralsearch.in/Home/searchVoter?epic_no={}&page_no={}&results_per_page={}&reureureired=ca3ac2c8-4676-48eb-9129-4cdce3adf6ea&search_type=epic&state=S11&txtCaptcha={}'
         self.get_detail_url = 'https://electoralsearch.in/Home/VoterInformation'
 
@@ -28,42 +32,41 @@ class Scrapping:
         self.custom_config_3 = r'--oem 3 --psm 10 -c tessedit_char_whitelist=023456789abcdefghjklmnopqrstuvwxyzABCDEFGHJKLMNOPQRXYZ'
 
         self.prev_captcha = ""
+        self.pid = "0"
 
     def create_folder_if_not_exists(self, foldername):
         if not os.path.exists(foldername):
             os.makedirs(foldername)
 
-    def start(self, inputpath, outpath, failedpath):
+    def start(self, inputpath, outpath):
         self.create_folder_if_not_exists(outpath)
-        self.create_folder_if_not_exists(failedpath)
 
         filenames = os.listdir(inputpath)
         filenames.sort(key=lambda f: int(re.sub('\D', '', f)))
 
-        flag = True
+        # flag = True
         for filename in filenames:
-            if filename == "S11A49P77.txt":
-                flag = False
-            if flag:
-                continue
+            # if filename == "S11A49P77.txt":
+            #     flag = False
+            # if flag:
+            #     continue
 
             inputfilename = inputpath + "/" + filename
             outfilename = outpath + "/" + filename.replace(".txt", ".csv")
-            failedfilename = failedpath + "/" + filename
 
+            if not os.path.exists(outfilename):
+                self.pdf_filename = filename.replace(".txt", ".pdf")
+                print(self.pid, self.get_current_time(), filename)
+                self.process_file(inputfilename, outfilename)
+            # if filename == "S11A49P150.txt":
+            #     break
 
-            print(self.get_current_time(), filename)
-            self.process_file(inputfilename, outfilename, failedfilename)
-            if filename == "S11A49P150.txt":
-                break
-
-    def process_file(self, inputfilename, outfilename, failedfilename):
+    def process_file(self, inputfilename, outfilename):
         self.inputfile = open(inputfilename, 'r')
         self.outfile = open(outfilename, 'w', newline='', encoding="utf-8")
         self.outwriter = csv.writer(self.outfile)
-        self.failedfile = open(failedfilename, 'w')
 
-        self.outwriter.writerow(['success', 'state', 'ac_acn', 'pc', 'name', 'name_v1', 'gender', 'age', 'epic_no', 'father_name', 'father_name_v1', 'part_number', 'part_name', 'serial_no', 'polling_station'])
+        self.outwriter.writerow(['filename', 'success', 'state', 'ac_acn', 'pc', 'name', 'name_v1', 'gender', 'age', 'epic_no', 'father_name', 'father_name_v1', 'part_number', 'part_name', 'pdf_serial_no', 'web_serial_no', 'polling_station'])
 
         cnt = 0
         while True:
@@ -79,37 +82,40 @@ class Scrapping:
 
             cnt += 1
             if cnt % 1 == 0:
-                print(self.get_current_time(), cnt, epic_id)
+                print(self.pid, self.get_current_time(), cnt, epic_id)
 
             ret = self.process_epic(epic_id)
             self.outfile.flush()
 
 
-        self.failedfile.close()
         self.outfile.close()
         self.inputfile.close()
 
     def process_epic(self, epic_id):
         if self.prev_captcha != "":
-            return self.get_data(self.prev_captcha, epic_id)
-
+            while True:
+                ret = self.get_data(self.prev_captcha, epic_id)
+                if ret:
+                    return ret
+                time.sleep(5)
+                print(self.pid, "Sleeping")
         cnt = 0
         while True:
             cnt += 1
-            print("----> Trying ", cnt)
+            print(self.pid, "----> Trying ", cnt)
             if self.solve(epic_id):
                 break
         return True
 
     def solve(self, epic_id):
-        r = self.session.get(self.base_url, headers={})
+        r = self.session.get(self.base_url, headers={}, verify=False)
         # file = open("captcha.jpg", "wb")
         # file.write(r.content)
         # file.close()
         nparr = np.frombuffer(r.content, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         cv2.imwrite("captcha.jpg", img)
-        print(img.shape)
+        # print(self.pid, img.shape)
         H = img.shape[0]
         W = img.shape[1]
         
@@ -118,7 +124,7 @@ class Scrapping:
         copied_bimg = bimg.copy()
         # cv2.imshow("binary", bimg)
         # cv2.waitKey(0)
-        print(bimg[0, 0])
+        # print(self.pid, bimg[0, 0])
         nseg = 0
 
         slice_images = []
@@ -150,7 +156,7 @@ class Scrapping:
                         q.append([vx, vy])
                         qb += 1
                 
-                print('size = ', qb)
+                print(self.pid, 'size = ', qb)
                 if qb > 2:
                     sub_img = self.cut_image(bimg, q, nseg)
                     slice_images.append(sub_img)
@@ -161,11 +167,11 @@ class Scrapping:
             ret = self.image_to_string(img, self.custom_config_3)
             if len(ret) > 0:
                 val += ret[0]
-        print(val)
+        print(self.pid, val)
         if len(val) != 6:
             return False
         return self.get_data(val, epic_id)
-        # print(nseg)
+        # print(self.pid, nseg)
         # simg = self.stitch_images(slice_images)
         # ret = self.image_to_string(simg, self.custom_config_2)
         # print(ret)
@@ -176,21 +182,19 @@ class Scrapping:
     def get_data(self, txtCaptcha, epic_id):
         url = self.get_data_url.format(epic_id, 1, 10, txtCaptcha)
         # print(url)
-        print("->1")
-        r = self.session.get(url, headers = {})
-        print("->2")
+        print(self.pid, "->1")
         try:
+            r = self.session.get(url, headers = {})
+            print(self.pid, "->2")
             docs = json.loads(r.content)['response']['docs']
         except:
             return False
         
         if len(docs) == 0:
-            self.outwriter.writerow([0, "", "", "", "", "", "", "", epic_id, "", "", "", "", self.serial_no, ""])
-            self.failedfile.write(epic_id + "\n")
+            self.outwriter.writerow([self.pdf_filename, 0, "", "", "", "", "", "", "", epic_id, "", "", "", "", self.serial_no, "", ""])
             return True
 
         res = docs[0]
-        # print(res)
         self.prev_captcha = txtCaptcha
         data = {
             # '__RequestVerificationToken' : 'BCoSaqxirZQMgrca7EBPF8kk8lLzEMNyShCzmhLC3Q2aAbQtX-sqIj0fi7-qF3vvrBOGAQEZ-FghNOsW4mpDCvHBeaWARAnUfFFt6VlmK0k1',
@@ -217,11 +221,13 @@ class Scrapping:
             'rln_type' : res['rln_type'],
         }
         # print(data)
-        print("->3")
-        r = self.session.post(self.get_detail_url, data = data, headers = {})
-        print("->4")
-        html = r.content.decode('utf-8')
-        # print(html)
+        print(self.pid, "->3")
+        try:
+            r = self.session.post(self.get_detail_url, data = data, headers = {})
+            print(self.pid, "->4")
+            html = r.content.decode('utf-8')
+        except:
+            return False
         soup=BeautifulSoup(html,'lxml')
         trs = soup.find('table', {'class':'responsive'}).find_all("tr")
         state = res['st_name']
@@ -239,7 +245,7 @@ class Scrapping:
         serial_no = res['slno_inpart']
         polling_station = res['ps_name'] + " - " + res['ps_no']
         # polling_date = trs[14].find_all('td')[1].text.strip()
-        self.outwriter.writerow([1, state, ac_acn, pc, name, name_v1, gender, age, epic_no, father_name, father_name_v1, part_number, part_name, serial_no, polling_station])
+        self.outwriter.writerow([self.pdf_filename, 1, state, ac_acn, pc, name, name_v1, gender, age, epic_no, father_name, father_name_v1, part_number, part_name, self.serial_no, serial_no, polling_station])
         return True
 
     def cut_image(self, img, q, id):
@@ -333,7 +339,7 @@ class Scrapping:
             csvinputfilename = csvpath + "/" + filename.replace(".txt", ".csv")
             outfilename = outpath + "/" + filename.replace(".txt", ".csv")
 
-            print(self.get_current_time(), filename)
+            print(self.pid, self.get_current_time(), filename)
             self.merge_file(txtinputfilename, csvinputfilename, outfilename, filename.replace(".txt", ".pdf"))
     def merge_file(self, txtinputfilename, csvinputfilename, outfilename, filename):
         self.txtinputfile = open(txtinputfilename, 'r', encoding="utf-8")
@@ -367,6 +373,11 @@ class Scrapping:
         self.csvinputfile.close()
         self.txtinputfile.close()
 
+    def fix_cert(self):
+        requests.get('https://electoralsearch.in', verify=True)
+        print(self.pid, requests.certs.where())
+
 if __name__ == "__main__":
     scrap = Scrapping()
-    scrap.merge("epics1", "pass1", "save1")
+    # scrap.fix_cert()
+    scrap.start("epics35", "save35")

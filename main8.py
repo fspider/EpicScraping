@@ -159,17 +159,19 @@ class EpicReader:
             return True
         return False
 
-    def process_pdfs(self, path, savepath):
+    def process_pdfs(self, path, savepath, i):
         self.create_folder_if_not_exists(savepath)
 
         filenames = os.listdir(path)
         filenames.sort(key=lambda f: int(re.sub('\D', '', f)))
         flag = False
+        if i == 73:
+            flag = True
         for name in filenames:
-            # if name == "S11A60P19.pdf":
-            #     flag = False
-            # if flag:
-            #     continue
+            if name == "S11A73P8.pdf":
+                flag = False
+            if flag:
+                continue
 
             full_pdf_path = path + name
             save_file_path = savepath + name.replace(".pdf", ".txt")
@@ -178,7 +180,7 @@ class EpicReader:
 
 if __name__ == "__main__":
     epicReader = EpicReader()
-    for i in range(70, 75):
-        epicReader.process_pdfs("pdfs{}/".format(i), "epics{}/".format(i))
+    for i in range(73, 75):
+        epicReader.process_pdfs("pdfs{}/".format(i), "epics{}/".format(i), i)
     # epicReader.process_pdf("a1.pdf", "out.txt")
     # epicReader.process_img("out/out40.jpg")
