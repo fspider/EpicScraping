@@ -92,7 +92,7 @@ class Scrapping:
                 continue
 
             cnt += 1
-            if cnt % 1 == 0:
+            if cnt % 10 == 0:
                 print(self.pid, self.get_current_time(), cnt, epic_id)
 
             ret = self.process_epic(epic_id)
