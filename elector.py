@@ -212,7 +212,7 @@ class Scrapping:
         try:
             docs = json.loads(r.content)['response']['docs']
         except:
-            return False, True
+            return True, True
 
         self.prev_captcha = txtCaptcha
         if len(docs) == 0:
