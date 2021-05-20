@@ -47,6 +47,14 @@ class Scrapping:
         filenames = os.listdir(inputpath)
         filenames.sort(key=lambda f: int(re.sub('\D', '', f)))
 
+        outfilenames = os.listdir(outpath)
+        outfilenames.sort(key=lambda f: int(re.sub('\D', '', f)))
+
+        if len(outfilenames) > 0:
+            outfilename = outfilenames[-1]
+            outfilepath = outpath + "/" + outfilename
+            os.remove(outfilepath)
+
         # flag = True
         for filename in filenames:
             # if filename == "S11A49P77.txt":
@@ -114,6 +122,8 @@ class Scrapping:
                     ret = False
                 if ret:
                     return ret
+                if recnt > 30:
+                    return False
         else:
             cnt = 0
             while True:
@@ -212,7 +222,8 @@ class Scrapping:
         try:
             docs = json.loads(r.content)['response']['docs']
         except:
-            return True, True
+            self.prev_captcha = ""
+            return False, False
 
         self.prev_captcha = txtCaptcha
         if len(docs) == 0:
@@ -220,30 +231,34 @@ class Scrapping:
             return True, True
 
         res = docs[0]
-        data = {
-            # '__RequestVerificationToken' : 'BCoSaqxirZQMgrca7EBPF8kk8lLzEMNyShCzmhLC3Q2aAbQtX-sqIj0fi7-qF3vvrBOGAQEZ-FghNOsW4mpDCvHBeaWARAnUfFFt6VlmK0k1',
-            'id' : res['id'],
-            'epic_no' : res['epic_no'],
-            'name' : res['name'],
-            'name_v1' : res['name_v1'],
-            'gender' : res['gender'],
-            'age' : res['age'],
-            'rln_name' : res['rln_name'],
-            'last_update' : res['last_update'],
-            'rln_name_v1' : res['rln_name_v1'],
-            'state' : res['st_name'],
-            'district' : res['dist_name'],
-            'ac_name' : res['ac_name'],
-            'acno' : res['ac_no'],
-            'pc_name' : res['pc_name'],
-            'ps_name' : res['ps_name'],
-            'slno_inpart' : res['slno_inpart'],
-            'stcode' : res['st_code'],
-            'ps_lat_long' : res['ps_lat_long'],
-            'partno' : res['part_no'],
-            'part_name' : res['part_name'],
-            'rln_type' : res['rln_type'],
-        }
+        try:
+            data = {
+                # '__RequestVerificationToken' : 'BCoSaqxirZQMgrca7EBPF8kk8lLzEMNyShCzmhLC3Q2aAbQtX-sqIj0fi7-qF3vvrBOGAQEZ-FghNOsW4mpDCvHBeaWARAnUfFFt6VlmK0k1',
+                'id' : res['id'],
+                'epic_no' : res['epic_no'],
+                'name' : res['name'],
+                'name_v1' : res['name_v1'],
+                'gender' : res['gender'],
+                'age' : res['age'],
+                'rln_name' : res['rln_name'],
+                'last_update' : res['last_update'],
+                'rln_name_v1' : res['rln_name_v1'],
+                'state' : res['st_name'],
+                'district' : res['dist_name'],
+                'ac_name' : res['ac_name'],
+                'acno' : res['ac_no'],
+                'pc_name' : res['pc_name'],
+                'ps_name' : res['ps_name'],
+                'slno_inpart' : res['slno_inpart'],
+                'stcode' : res['st_code'],
+                'ps_lat_long' : res['ps_lat_long'],
+                'partno' : res['part_no'],
+                'part_name' : res['part_name'],
+                'rln_type' : res['rln_type'],
+            }
+        except:
+            self.outwriter.writerow([self.pdf_filename, 0, "", "", "", "", "", "", "", epic_id, "", "", "", "", self.serial_no, "", ""])
+            return True, True
         # print(data)
         # print(self.pid, "->3")
         try:
