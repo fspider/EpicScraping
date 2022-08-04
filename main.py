@@ -57,11 +57,15 @@ class EpicReader:
         # print(ret)
         return ret
 
-    def process_pdf(self, filename, save_file_path):
+    def process_pdf(self, filename, save_file_path, folder_id):
         self.serial_no = 0
         self.outfile = open(save_file_path, "w")
+        try:
+            info = pdfinfo_from_path(filename, userpw=None, poppler_path=None)
+        except Exception as e:
+            print("ERROR!!!", e)
+            return False
 
-        info = pdfinfo_from_path(filename, userpw=None, poppler_path=None)
         nPages = info["Pages"]
         page_no = 0
         while page_no < nPages:
@@ -70,7 +74,7 @@ class EpicReader:
                 page_no += 1
                 if page_no <= 2 or page_no == nPages:
                     continue
-                savepath = 'tmp.jpg'
+                savepath = 'tmp{}.jpg'.format(folder_id)
                 page.save(savepath, 'JPEG')
                 print("[process_pdf] Processing {}th page".format(page_no))
                 self.process_img(savepath)
@@ -92,15 +96,23 @@ class EpicReader:
         #     self.outfile.flush()
         self.outfile.close()
         print(self.get_current_time())
+        return True
 
     def validate_epic(self, epic_id):
         n = len(epic_id)
         ret = ""
         cnt = 0
+        # print("--->>", epic_id)
         for i in range(n):
             c = epic_id[i]
             if c.isdigit() and cnt < 3:
-                continue
+                if c == "2":
+                    c = "Z"
+                elif c == "1":
+                    c = "I"
+                else:
+                    continue
+
             if c.isalpha() or c.isdigit() or c == "/":
                 ret += c
                 cnt += 1
@@ -163,8 +175,8 @@ class EpicReader:
         filenames = os.listdir(path)
         filenames.sort(key=lambda f: int(re.sub('\D', '', f)))
         flag = False
-        if i == 25:
-            flag = True
+        # if i == 25:
+        #     flag = True
         for name in filenames:
             if name == "S11A25P96.pdf":
                 flag = False
@@ -174,11 +186,13 @@ class EpicReader:
             full_pdf_path = path + name
             save_file_path = savepath + name.replace(".pdf", ".txt")
             print("->", full_pdf_path, save_file_path)
-            self.process_pdf(full_pdf_path, save_file_path)
+            if not self.process_pdf(full_pdf_path, save_file_path, i):
+                print("Stopping in the middle")
+                return False
 
 if __name__ == "__main__":
     epicReader = EpicReader()
-    for i in range(25, 28):
+    for i in range(1, 2):
         epicReader.process_pdfs("pdfs{}/".format(i), "epics{}/".format(i), i)
     # epicReader.process_pdf("a1.pdf", "out.txt")
     # epicReader.process_img("out/out40.jpg")

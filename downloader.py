@@ -32,13 +32,13 @@ class Scrapping:
         return ""
 
     def start(self):
-        lacNo = 1
+        lacNo = 7
         for i in range(0, 14):
             distNo = i + 1
             while lacNo <= self.laclist[i]:
                 self.start_lac(distNo, lacNo)
                 lacNo += 1
-                if lacNo == 140:
+                if lacNo == 141:
                     return
 
     def start_lac(self, distNo, lacNo):
@@ -91,6 +91,9 @@ class Scrapping:
     def download_file(self):
         local_filename = self.save_path + "/" + self.pdf_url.split('/')[-1]
         # NOTE the stream=True parameter below
+        if not os.path.exists(local_filename):
+            return local_filename
+
         with requests.get(self.pdf_download_url, stream=True) as r:
             r.raise_for_status()
             with open(local_filename, 'wb') as f:
