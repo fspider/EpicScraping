@@ -6,7 +6,7 @@ import csv
 import os
 from bs4 import BeautifulSoup
 from datetime import datetime
-from python_anticaptcha import AnticaptchaClient, NoCaptchaTaskProxylessTask
+# from python_anticaptcha import AnticaptchaClient, NoCaptchaTaskProxylessTask
 
 
 class Scrapping:
@@ -19,7 +19,7 @@ class Scrapping:
 
         self.api_key = "e00923a245a141aabc38bf7031e7d35b"
         self.site_key_pattern = 'data-sitekey="(.+?)"'
-        self.client = AnticaptchaClient(self.api_key)
+        # self.client = AnticaptchaClient(self.api_key)
         self.site_key = None
         self.task = None
         self.laclist = [5, 16, 19, 32, 48, 60, 73, 87, 92, 101, 110, 115, 126, 140]
@@ -32,13 +32,13 @@ class Scrapping:
         return ""
 
     def start(self):
-        lacNo = 25
+        lacNo = 1
         for i in range(0, 14):
             distNo = i + 1
             while lacNo <= self.laclist[i]:
                 self.start_lac(distNo, lacNo)
                 lacNo += 1
-                if lacNo == 35:
+                if lacNo == 140:
                     return
 
     def start_lac(self, distNo, lacNo):
