@@ -23,6 +23,8 @@ class Scrapping:
         self.site_key = None
         self.task = None
         self.laclist = [5, 16, 19, 32, 48, 60, 73, 87, 92, 101, 110, 115, 126, 140]
+        self.log_file = open('error.txt', 'a')
+
     def extract_url(self, s):
         match = re.search(r'href=[\'"]?([^\'" >]+)', s)
         if match:
@@ -32,7 +34,7 @@ class Scrapping:
         return ""
 
     def start(self):
-        lacNo = 7
+        lacNo = 65
         for i in range(0, 14):
             distNo = i + 1
             while lacNo <= self.laclist[i]:
@@ -62,9 +64,15 @@ class Scrapping:
         cnt = 0
         for i in range(cnt, nbooths):
             booth = booths["aaData"][i]
+            booth_id = booth[0]
             self.pdf_url = self.extract_url(booth[4])
             print(cnt, self.pdf_url)
-            self.download_pdf()
+            try:
+                self.download_pdf()
+            except Exception as e:
+                self.log_file.write('{} [Failed] {} {} {} {}\n'.format(datetime.now(), distNo, lacNo, booth_id, self.pdf_url))
+                self.log_file.write('{} [Error] {}\n'.format(datetime.now(), e))
+                print("Skip", distNo, lacNo, booth_id, self.pdf_url)
             cnt += 1
 
     def create_folder_if_not_exists(self, foldername):

@@ -9,3 +9,4 @@ pass*/*
 tmp*.jpg
 tmp.jpg
 captcha.jpg
+error.txt
