@@ -91,7 +91,7 @@ class Scrapping:
     def download_file(self):
         local_filename = self.save_path + "/" + self.pdf_url.split('/')[-1]
         # NOTE the stream=True parameter below
-        if not os.path.exists(local_filename):
+        if os.path.exists(local_filename):
             return local_filename
 
         with requests.get(self.pdf_download_url, stream=True) as r:
