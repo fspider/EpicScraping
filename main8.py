@@ -175,10 +175,10 @@ class EpicReader:
         filenames = os.listdir(path)
         filenames.sort(key=lambda f: int(re.sub('\D', '', f)))
         flag = False
-        # if i == 25:
-        #     flag = True
+        if i == 125:
+            flag = True
         for name in filenames:
-            if name == "S11A25P96.pdf":
+            if name == "S11A125P19.pdf":
                 flag = False
             if flag:
                 continue
@@ -192,7 +192,7 @@ class EpicReader:
 
 if __name__ == "__main__":
     epicReader = EpicReader()
-    for i in range(100, 102):
+    for i in range(125, 126):
         epicReader.process_pdfs("pdfs{}/".format(i), "epics{}/".format(i), i)
     # epicReader.process_pdf("a1.pdf", "out.txt")
     # epicReader.process_img("out/out40.jpg")
