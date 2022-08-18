@@ -22,7 +22,7 @@ from multiprocessing import Pool
 class Scrapping:
     def __init__(self, pid):
         self.base_url = 'https://electoralsearch.in/Home/GetCaptcha?image=true&id=Wed%20May%2019%202021%2019:47:21%20GMT+0800%20(China%20Standard%20Time)'
-        self.get_data_url = 'https://electoralsearch.in/Home/searchVoter?epic_no={}&page_no={}&results_per_page={}&reureureired=ca3ac2c8-4676-48eb-9129-4cdce3adf6ea&search_type=epic&state=S11&txtCaptcha={}'
+        self.get_data_url = 'https://electoralsearch.in/Home/searchVoter'
         self.get_detail_url = 'https://electoralsearch.in/Home/VoterInformation'
 
         self.session = requests.Session()
@@ -142,62 +142,20 @@ class Scrapping:
         # file.close()
         nparr = np.frombuffer(r.content, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        cv2.imwrite("captcha{}.jpg".format(self.save_id), img)
+        cv2.imwrite("captcha{}.jpg".format(self.pid), img)
         self.save_id += 1
         # print(self.pid, img.shape)
         H = img.shape[0]
         W = img.shape[1]
         
-        gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        ret, bimg = cv2.threshold(gray_img,200,255,cv2.THRESH_BINARY)
-        copied_bimg = bimg.copy()
-        # cv2.imshow("binary", bimg)
+        # cv2.imshow("Captch-{}".format(self.pid), img)
         # cv2.waitKey(0)
         # print(self.pid, bimg[0, 0])
-        nseg = 0
-
-        slice_images = []
-
-        for x in range(W):
-            for y in range(H):
-                if bimg[y, x] == 255:
-                    continue
-
-                q = []
-                qb = qf = 0
-                q.append([x, y])
-
-                bimg[y, x] = 255
-                qb += 1
-
-                while qb > qf:
-                    ux, uy = q[qf]
-                    qf += 1
-
-                    for r in range(len(self.dx)):
-                        vx = ux + self.dx[r]
-                        vy = uy + self.dy[r]
-                        if vx < -1 or vy < -1 or vx >= W or vy >= H:
-                            continue
-                        if bimg[vy, vx] == 255:
-                            continue
-                        bimg[vy, vx] = 255
-                        q.append([vx, vy])
-                        qb += 1
-                
-                # print(self.pid, 'size = ', qb)
-                if qb > 2:
-                    sub_img = self.cut_image(bimg, q, nseg)
-                    slice_images.append(sub_img)
-                    nseg += 1
-
-        val = ""
-        for img in slice_images:
-            ret = self.image_to_string(img, self.custom_config_3)
-            if len(ret) > 0:
-                val += ret[0]
+        print("Input Code! - PID : {}".format(self.pid))
+        val = input()
         print(self.pid, val)
         if len(val) != 6:
+            print("Length Not matched!")
             return False
         return self.get_data(val, epic_id)[0]
 
@@ -210,34 +168,54 @@ class Scrapping:
         # cv2.waitKey(0)
 
     def get_data(self, txtCaptcha, epic_id):
-        url = self.get_data_url.format(epic_id, 1, 10, txtCaptcha)
+        # ?epic_no={}&page_no={}&results_per_page={}&reureureired=ca3ac2c8-4676-48eb-9129-4cdce3adf6ea&search_type=epic&state=S11&txtCaptcha={}
+        # url = self.get_data_url.format(epic_id, 1, 10, txtCaptcha)
         # print(url)
         # print(self.pid, "->1")
         try:
-            r = self.session.get(url, headers = {}, timeout=10)
-        except:
-            print(self.pid, "Get MainData Failed")
+            data = {
+                # '__RequestVerificationToken' : 'BCoSaqxirZQMgrca7EBPF8kk8lLzEMNyShCzmhLC3Q2aAbQtX-sqIj0fi7-qF3vvrBOGAQEZ-FghNOsW4mpDCvHBeaWARAnUfFFt6VlmK0k1',
+                'epic_no' : epic_id,
+                'page_no' : 1,
+                'results_per_page' : 10,
+                'reureureired' : "ca3ac2c8-4676-48eb-9129-4cdce3adf6ea",
+                'search_type' : "epic",
+                'state' : "S11",
+                'txtCaptcha' : txtCaptcha,
+            }
+            r = self.session.post(self.get_data_url, data = data, headers = {}, timeout=10)
+        except Exception as e:
+            print(self.pid, "Get MainData Failed", e)
             return False, False
 
         # print(self.pid, "->2")
 
         try:
             docs = json.loads(r.content)['response']['docs']
-        except:
+        except Exception as e:
             self.prev_captcha = ""
+            # print("Json Loads Failed", e)
+            # file = open("failed.html", "wb")
+            # file.write(r.content)
+            # file.close()
             return False, False
+
+        # print("Len Docs", len(docs))
 
         self.prev_captcha = txtCaptcha
         if len(docs) == 0:
             self.outwriter.writerow([self.pdf_filename, 0, "", "", "", "", "", "", "", epic_id, "", "", "", "", self.serial_no, "", ""])
+            # print(r.content)
             return True, True
 
         res = docs[0]
         try:
             data = {
-                # '__RequestVerificationToken' : 'BCoSaqxirZQMgrca7EBPF8kk8lLzEMNyShCzmhLC3Q2aAbQtX-sqIj0fi7-qF3vvrBOGAQEZ-FghNOsW4mpDCvHBeaWARAnUfFFt6VlmK0k1',
+                # '__RequestVerificationToken' : 'VU5pBHNxL_zONzi_xiNcW268l1qgdnCWmM6Ee3RistowL_rrH-wiEhjYHjFCh6atmrSYntDWmKYuuD5iOYXT2XdTjGX-uY1soFyGy7Yu-tc1',
+                'h_info' : res['hashedInfo'],
                 'id' : res['id'],
-                'epic_no' : res['epic_no'],
+                'epic_no_plain' : res['epic_no'],
+                'epic_no' : res['enc_epic_no'],
                 'name' : res['name'],
                 'name_v1' : res['name_v1'],
                 'gender' : res['gender'],
@@ -248,28 +226,39 @@ class Scrapping:
                 'state' : res['st_name'],
                 'district' : res['dist_name'],
                 'ac_name' : res['ac_name'],
-                'acno' : res['ac_no'],
+                'ac_no' : res['ac_no'],
                 'pc_name' : res['pc_name'],
                 'ps_name' : res['ps_name'],
                 'slno_inpart' : res['slno_inpart'],
-                'stcode' : res['st_code'],
+                'st_code' : res['st_code'],
                 'ps_lat_long' : res['ps_lat_long'],
-                'partno' : res['part_no'],
+                'part_no' : res['part_no'],
                 'part_name' : res['part_name'],
                 'rln_type' : res['rln_type'],
             }
-        except:
+            cookies = {
+                'Electoral': '456c656374726f6c7365617263682d73657276657233',
+                'cookiesession1': '678B2867FEE1FC5FDD6AE9A3C402B2E4',
+                'electoralSearchId': 'uiyrk4uwckvxgiyps1wi3aan',
+                'runOnce': 'true',
+                '__RequestVerificationToken': 'a7b_YmBKWYHgjwFCnSFLsekG8rfWoYmFhlrsUrULaEkI3pxy93htow6GHT7dOzIZTbc7DofozYr-Igk62pg4ni2i-nVOhUHJQJklFlvejak1',
+                    }
+        except Exception as e:
+            print("Parsing Error", e)
             self.outwriter.writerow([self.pdf_filename, 0, "", "", "", "", "", "", "", epic_id, "", "", "", "", self.serial_no, "", ""])
             return True, True
         # print(data)
         # print(self.pid, "->3")
         try:
-            r = self.session.post(self.get_detail_url, data = data, headers = {}, timeout=10)
+            r = self.session.post(self.get_detail_url, data = data, timeout=10)
             # print(self.pid, "->4")
             html = r.content.decode('utf-8')
         except:
             print(self.pid, "Get details Failed")
             return False, False
+        # file = open("failed_temp.html", "wb")
+        # file.write(r.content)
+        # file.close()
         soup=BeautifulSoup(html,'lxml')
         try:
             trs = soup.find('table', {'class':'responsive'}).find_all("tr")
@@ -281,16 +270,19 @@ class Scrapping:
             gender = res['gender']
             age = res['age']
             epic_no = res['epic_no']
-            father_name = trs[9].find_all('td')[0].text.strip()
-            father_name_v1 = trs[8].find_all('td')[1].text.strip()
+            father_name = trs[10].find_all('td')[0].text.strip()
+            father_name_v1 = trs[9].find_all('td')[1].text.strip()
             part_number = res['part_no']
             part_name = res['part_name']
             serial_no = res['slno_inpart']
             polling_station = res['ps_name'] + " - " + res['ps_no']
             # polling_date = trs[14].find_all('td')[1].text.strip()
             self.outwriter.writerow([self.pdf_filename, 1, state, ac_acn, pc, name, name_v1, gender, age, epic_no, father_name, father_name_v1, part_number, part_name, self.serial_no, serial_no, polling_station])
-        except:
+            # print([self.pdf_filename, 1, state, ac_acn, pc, name, name_v1, gender, age, epic_no, father_name, father_name_v1, part_number, part_name, self.serial_no, serial_no, polling_station])
+        except Exception as e:
             self.outwriter.writerow([self.pdf_filename, 0, "", "", "", "", "", "", "", epic_id, "", "", "", "", self.serial_no, "", ""])
+            print([self.pdf_filename, 0, "", "", "", "", "", "", "", epic_id, "", "", "", "", self.serial_no, "", ""])
+            # print(e)
         return True, True
 
     def cut_image(self, img, q, id):
@@ -375,7 +367,7 @@ def f(x):
     return "Process {} - Completed!!!!!!".format(x)
 
 if __name__ == "__main__":
-    arr = [x for x in range(1, 2)]
-    nPool = len(arr)
-    with Pool(nPool) as p:
-        print(p.map(f, arr))
+    x = 1
+    scrap = Scrapping(x)
+    scrap.start("epics{}".format(x), "save{}".format(x))
+    print( "Process {} - Completed!!!!!!".format(x))

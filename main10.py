@@ -57,11 +57,15 @@ class EpicReader:
         # print(ret)
         return ret
 
-    def process_pdf(self, filename, save_file_path):
+    def process_pdf(self, filename, save_file_path, folder_id):
         self.serial_no = 0
         self.outfile = open(save_file_path, "w")
+        try:
+            info = pdfinfo_from_path(filename, userpw=None, poppler_path=None)
+        except Exception as e:
+            print("ERROR!!!", e)
+            return False
 
-        info = pdfinfo_from_path(filename, userpw=None, poppler_path=None)
         nPages = info["Pages"]
         page_no = 0
         while page_no < nPages:
@@ -70,7 +74,7 @@ class EpicReader:
                 page_no += 1
                 if page_no <= 2 or page_no == nPages:
                     continue
-                savepath = 'tmp10.jpg'
+                savepath = 'tmp{}.jpg'.format(folder_id)
                 page.save(savepath, 'JPEG')
                 print("[process_pdf] Processing {}th page".format(page_no))
                 self.process_img(savepath)
@@ -92,15 +96,23 @@ class EpicReader:
         #     self.outfile.flush()
         self.outfile.close()
         print(self.get_current_time())
+        return True
 
     def validate_epic(self, epic_id):
         n = len(epic_id)
         ret = ""
         cnt = 0
+        # print("--->>", epic_id)
         for i in range(n):
             c = epic_id[i]
             if c.isdigit() and cnt < 3:
-                continue
+                if c == "2":
+                    c = "Z"
+                elif c == "1":
+                    c = "I"
+                else:
+                    continue
+
             if c.isalpha() or c.isdigit() or c == "/":
                 ret += c
                 cnt += 1
@@ -124,9 +136,7 @@ class EpicReader:
                 red = (rst[0] + self.sw, rst[1] + self.sh)
                 # img = cv2.rectangle(img, rst, red, (255, 0, 0), 5)
                 epic_img = img[rst[1]:red[1], rst[0]:red[0]]
-                # cv2.imshow('epic_img', epic_img)
-                # cv2.waitKey(0)
-
+                
                 custom_config1 = r'--oem 3 --psm 6'
                 epic_id = pytesseract.image_to_string(epic_img, config=custom_config1)
                 epic_id = self.validate_epic(epic_id)
@@ -159,26 +169,30 @@ class EpicReader:
             return True
         return False
 
-    def process_pdfs(self, path, savepath):
+    def process_pdfs(self, path, savepath, i):
         self.create_folder_if_not_exists(savepath)
 
         filenames = os.listdir(path)
         filenames.sort(key=lambda f: int(re.sub('\D', '', f)))
         flag = False
+        # if i == 25:
+        #     flag = True
         for name in filenames:
-            # if name == "S11A60P19.pdf":
-            #     flag = False
-            # if flag:
-            #     continue
+            if name == "S11A25P96.pdf":
+                flag = False
+            if flag:
+                continue
 
             full_pdf_path = path + name
             save_file_path = savepath + name.replace(".pdf", ".txt")
             print("->", full_pdf_path, save_file_path)
-            self.process_pdf(full_pdf_path, save_file_path)
+            if not self.process_pdf(full_pdf_path, save_file_path, i):
+                print("Stopping in the middle")
+                return False
 
 if __name__ == "__main__":
     epicReader = EpicReader()
-    for i in range(70, 75):
-        epicReader.process_pdfs("pdfs{}/".format(i), "epics{}/".format(i))
+    for i in range(14, 15):
+        epicReader.process_pdfs("pdfs{}/".format(i), "epics{}/".format(i), i)
     # epicReader.process_pdf("a1.pdf", "out.txt")
     # epicReader.process_img("out/out40.jpg")

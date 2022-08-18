@@ -33,6 +33,7 @@ class Scrapping:
         self.custom_config_1 = r'--oem 3 --psm 6'
         self.custom_config_2 = r'--oem 3 --psm 7 -c tessedit_char_whitelist=023456789abcdefghjklmnopqrstuvwxyzABCDEFGHJKLMNOPQRXYZ'
         self.custom_config_3 = r'--oem 3 --psm 10 -c tessedit_char_whitelist=023456789abcdefghjklmnopqrstuvwxyzABCDEFGHJKLMNOPQRXYZ'
+        self.custom_config_4 = r'--oem 3 --psm 8 -c tessedit_char_whitelist=023456789abcdefghjklmnopqrstuvwxyzABCDEFGHJKLMNOPQRXYZ'
 
         self.prev_captcha = ""
         self.pid = pid
@@ -136,13 +137,15 @@ class Scrapping:
             return True
 
     def solve(self, epic_id):
-        r = self.session.get(self.base_url, headers={}, verify=False, timeout=10)
+        epic_id = "UVF6485916"
+        # r = self.session.get(self.base_url, headers={}, verify=False, timeout=10)
         # file = open("captcha.jpg", "wb")
         # file.write(r.content)
         # file.close()
-        nparr = np.frombuffer(r.content, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        cv2.imwrite("captcha{}.jpg".format(self.save_id), img)
+        # nparr = np.frombuffer(r.content, np.uint8)
+        # img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        img = cv2.imread('captcha{}.jpg'.format(1))
+        # cv2.imwrite("captcha{}.jpg".format(self.save_id), img)
         self.save_id += 1
         # print(self.pid, img.shape)
         H = img.shape[0]
@@ -191,23 +194,28 @@ class Scrapping:
                     slice_images.append(sub_img)
                     nseg += 1
 
-        val = ""
-        for img in slice_images:
-            ret = self.image_to_string(img, self.custom_config_3)
-            if len(ret) > 0:
-                val += ret[0]
-        print(self.pid, val)
-        if len(val) != 6:
-            return False
-        return self.get_data(val, epic_id)[0]
+        # val = ""
+        # for img in slice_images:
+        #     ret = self.image_to_string(img, self.custom_config_3)
+        #     if len(ret) > 0:
+        #         val += ret[0]
+        # print(self.pid, val)
+        # if len(val) != 6:
+        #     return False
 
-        # print(self.pid, nseg)
-        # simg = self.stitch_images(slice_images)
-        # ret = self.image_to_string(simg, self.custom_config_2)
-        # print(ret)
-        # cv2.imshow("simg", simg)
+        # return val
+        # return self.get_data(val, epic_id)[0]
+
+        simg = self.stitch_images(slice_images)
+        ret = self.image_to_string(simg, self.custom_config_4)
+        print(ret)
+        cv2.imshow("simg", simg)
         # cv2.imshow("bimg", copied_bimg)
-        # cv2.waitKey(0)
+        cv2.waitKey(0)
+
+        if len(ret) != 6:
+            return False
+        return ret
 
     def get_data(self, txtCaptcha, epic_id):
         url = self.get_data_url.format(epic_id, 1, 10, txtCaptcha)
@@ -313,37 +321,95 @@ class Scrapping:
         for x, y in q:
             img[y - mi_y + padding, x - mi_x + padding] = 0
 
-        img = self.rotate_image(img, 12)
-        cv2.imshow("img", img)
-        cv2.waitKey(0)
+        # cv2.imshow("img", img)
+        # cv2.waitKey(0)
         return img
 
     def stitch_images(self, imgs):
         nimg = len(imgs)
 
-        W = 0
+        startingW = 10
+        paddingW = 8
+        paddingH = 5
+        W = startingW * 2
         H = 0
-        for img in imgs:
+
+        nImgs = len(imgs)
+        rect = [None for x in range(nImgs)]
+        for i in range(nImgs):
+            img = imgs[i]
+            img = self.rotate_image(img, 12 * int(1 - i / 2))
+            imgs[i] = img
+
             hh = img.shape[0]
             ww = img.shape[1]
-            W += ww
-            H = max(H, hh)
+            ret = self.find_image_area_rect(img)
+            rect[i] = ret
+            if ret is None:
+                continue
+            stx, sty, edx, edy = ret
+            rw = edx - stx + 1
+            rh = edy - sty + 1
+            W += rw + paddingW
+            H = max(H, rh + paddingH * 2)
 
         simg = np.zeros((H, W), dtype=np.uint8)
         for y in range(H):
             for x in range(W):
                 simg[y, x] = 255
 
-        sw = 0
-        for img in imgs:
+        sw = startingW
+        for i in range(nImgs):
+            img = imgs[i]
+            ret = rect[i]
+            if ret is None:
+                continue
+            stx, sty, edx, edy = ret
+            rw = edx - stx + 1
+            rh = edy - sty + 1
             hh = img.shape[0]
             ww = img.shape[1]
-            dh = H - hh
-            for x in range(ww):
-                for y in range(hh):
-                    simg[dh + y, sw + x] = img[y, x]
-            sw += ww
+            vh = H-paddingH-rh
+
+            for x in range(rw):
+                for y in range(rh):
+                    simg[vh+y, sw+x] = img[sty + y, stx + x]
+
+            # for x in range(ww):
+            #     for y in range(hh):
+            #         simg[dh + y, sw + x] = img[y, x]
+            sw += rw + paddingW
         return simg
+
+    def find_image_area_rect(self, img):
+        # gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        ret, bimg = cv2.threshold(img,200,255,cv2.THRESH_BINARY)
+        H = img.shape[0]
+        W = img.shape[1]
+
+        stx = W
+        sty = H
+        edx = 0
+        edy = 0
+
+        for x in range(W):
+            for y in range(H):
+                val = bimg[y, x]
+                if val == 255: continue
+                if x < stx: stx = x
+                if y < sty: sty = y
+                if x > edx: edx = x
+                if y > edy: edy = y
+
+        if stx >= edx or sty >= edy:
+            print("Failed Finding Rect")
+            return None
+
+        # rimg = cv2.rectangle(img, (stx, sty), (edx, edy), (255, 0, 0), 1)
+
+        # cv2.imshow("rimg", rimg)
+        # cv2.waitKey(0)
+        return [stx, sty, edx, edy]
 
     def rotate_image(self, image, angle):
         image_center = tuple(np.array(image.shape[1::-1]) / 2)
@@ -374,8 +440,13 @@ def f(x):
     scrap.start("epics{}".format(x), "save{}".format(x))
     return "Process {} - Completed!!!!!!".format(x)
 
+
+
 if __name__ == "__main__":
-    arr = [x for x in range(1, 2)]
-    nPool = len(arr)
-    with Pool(nPool) as p:
-        print(p.map(f, arr))
+    # arr = [x for x in range(1, 2)]
+    # nPool = len(arr)
+    # with Pool(nPool) as p:
+    #     print(p.map(f, arr))
+
+    scrap = Scrapping(1)
+    scrap.solve("123")
