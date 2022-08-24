@@ -13,8 +13,8 @@ class Scrapping:
     def __init__(self):
         self.domain = 'http://www.ceo.kerala.gov.in'
         self.base_url = self.domain + '/electoralrolls.html'
-        # self.list_url = self.domain + '/electoralroll/partsListAjax.html?currentYear=2021&distNo=6&lacNo=60&sEcho=1&iColumns=5&sColumns=&iDisplayStart=0&iDisplayLength=500&iSortingCols=1&iSortCol_0=0&sSortDir_0=asc&bSortable_0=false&bSortable_1=false&bSortable_2=false&bSortable_3=false&bSortable_4=false&undefined=undefined'
-        self.list_url = self.domain +   '/electoralroll/partsListAjax.html?currentYear=2021&distNo={}&lacNo={}&sEcho=1&iColumns=5&sColumns=&iDisplayStart=0&iDisplayLength=500&iSortingCols=1&iSortCol_0=0&sSortDir_0=asc&bSortable_0=false&bSortable_1=false&bSortable_2=false&bSortable_3=false&bSortable_4=false&undefined=undefined'
+        # self.list_url = self.domain + '/electoralroll/partsListAjax.html?currentYear=2022&distNo=6&lacNo=60&sEcho=1&iColumns=5&sColumns=&iDisplayStart=0&iDisplayLength=500&iSortingCols=1&iSortCol_0=0&sSortDir_0=asc&bSortable_0=false&bSortable_1=false&bSortable_2=false&bSortable_3=false&bSortable_4=false&undefined=undefined'
+        self.list_url = self.domain +   '/electoralroll/partsListAjax.html?currentYear=2022&distNo={}&lacNo={}&sEcho=1&iColumns=5&sColumns=&iDisplayStart=0&iDisplayLength=500&iSortingCols=1&iSortCol_0=0&sSortDir_0=asc&bSortable_0=false&bSortable_1=false&bSortable_2=false&bSortable_3=false&bSortable_4=false&undefined=undefined'
         self.session = requests.Session()
 
         self.api_key = "e00923a245a141aabc38bf7031e7d35b"
@@ -34,13 +34,13 @@ class Scrapping:
         return ""
 
     def start(self):
-        lacNo = 133
+        lacNo = 66
         for i in range(0, 14):
             distNo = i + 1
             while lacNo <= self.laclist[i]:
                 self.start_lac(distNo, lacNo)
                 lacNo += 1
-                if lacNo == 141:
+                if lacNo == 67:
                     return
 
     def start_lac(self, distNo, lacNo):

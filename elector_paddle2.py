@@ -367,10 +367,11 @@ def DetectOCR():
     return text
 
 if __name__ == "__main__":
-    arr = [x for x in range(1, 21)]
+    arr = [x for x in range(21, 41)]
     nPool = len(arr)
     with Pool(nPool) as p:
         print(p.map(f, arr))
+
 
     # res = DetectOCR()
     # print(res) 
