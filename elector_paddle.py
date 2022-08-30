@@ -80,7 +80,12 @@ class Scrapping:
 
         cnt = 0
         while True:
-            line = self.inputfile.readline()
+            try:
+                line = self.inputfile.readline()
+            except Exception as e:
+                print(e)
+                print("It looks reached to the end")
+                break
             if not line:
                 break
             arr = line.strip().split(',')
