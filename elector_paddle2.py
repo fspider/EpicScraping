@@ -248,7 +248,7 @@ class Scrapping:
         # print(data)
         # print(self.pid, "->3")
         try:
-            r = self.session.post(self.get_detail_url, data = data, headers = {}, timeout=10)
+            r = self.session.post(self.get_detail_url, data = data, headers = {}, timeout=20)
             # print(self.pid, "->4")
             html = r.content.decode('utf-8')
         except:

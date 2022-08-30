@@ -248,10 +248,11 @@ class Scrapping:
         # print(data)
         # print(self.pid, "->3")
         try:
-            r = self.session.post(self.get_detail_url, data = data, headers = {}, timeout=10)
+            r = self.session.post(self.get_detail_url, data = data, headers = {}, timeout=20)
             # print(self.pid, "->4")
             html = r.content.decode('utf-8')
         except:
+            print(self.pid, "Get details Failed")
             self.outwriter.writerow([self.pdf_filename, 0, "", "", "", "", "", "", "", epic_id, "", "", "", "", self.serial_no, "", ""])
             return True, True
         soup=BeautifulSoup(html,'lxml')
