@@ -192,7 +192,7 @@ class EpicReader:
 
 if __name__ == "__main__":
     epicReader = EpicReader()
-    for i in range(49, 55):
+    for i in range(1, 10):
         epicReader.process_pdfs("pdfs{}/".format(i), "epics{}/".format(i), i)
     # epicReader.process_pdf("a1.pdf", "out.txt")
     # epicReader.process_img("out/out40.jpg")

@@ -138,8 +138,11 @@ class EpicReader:
                 epic_img = img[rst[1]:red[1], rst[0]:red[0]]
                 
                 custom_config1 = r'--oem 3 --psm 6'
-                epic_id = pytesseract.image_to_string(epic_img, config=custom_config1)
-                epic_id = self.validate_epic(epic_id)
+                try:
+                    epic_id = pytesseract.image_to_string(epic_img, config=custom_config1)
+                    epic_id = self.validate_epic(epic_id)
+                except Exception as e:
+                    epic_id = ""
 
                 rst2 = (self.sx2 + self.dw * nx, ht + 9)
                 red2 = (rst2[0] + self.sw2, rst2[1] + self.sh2)
@@ -175,10 +178,10 @@ class EpicReader:
         filenames = os.listdir(path)
         filenames.sort(key=lambda f: int(re.sub('\D', '', f)))
         flag = False
-        if i == 125:
-            flag = True
+        # if i == 7:
+        #     flag = True
         for name in filenames:
-            if name == "S11A125P19.pdf":
+            if name == "S11A7P29.pdf":
                 flag = False
             if flag:
                 continue
@@ -192,7 +195,7 @@ class EpicReader:
 
 if __name__ == "__main__":
     epicReader = EpicReader()
-    for i in range(125, 126):
+    for i in range(60, 70):
         epicReader.process_pdfs("pdfs{}/".format(i), "epics{}/".format(i), i)
     # epicReader.process_pdf("a1.pdf", "out.txt")
     # epicReader.process_img("out/out40.jpg")

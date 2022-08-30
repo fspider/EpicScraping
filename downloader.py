@@ -34,7 +34,7 @@ class Scrapping:
         return ""
 
     def start(self):
-        lacNo = 1
+        lacNo = 4
         for i in range(0, 14):
             distNo = i + 1
             while lacNo <= self.laclist[i]:

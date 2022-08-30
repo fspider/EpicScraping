@@ -134,7 +134,10 @@ class Scrapping:
             return True
 
     def solve(self, epic_id):
-        r = self.session.get(self.base_url, headers={}, verify=False, timeout=10)
+        try:
+            r = self.session.get(self.base_url, headers={}, verify=False, timeout=10)
+        except Exception as e:
+            return False
         # file = open("captcha.jpg", "wb")
         # file.write(r.content)
         # file.close()
