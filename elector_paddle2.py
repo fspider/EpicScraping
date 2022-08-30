@@ -112,31 +112,22 @@ class Scrapping:
             if notagain:
                 return ret
     
-            recnt = 0
-            while True:
-                self.session = requests.Session()
-                self.prev_captcha = ""
-                recnt += 1
-                print(self.pid, "----> reconnecting ", recnt)
-                try:
-                    ret = self.solve(epic_id)
-                except:
-                    print(self.pid, "Sleeping")
-                    time.sleep(20)
-                    ret = False
-                if ret:
-                    return ret
-                if recnt > 30:
-                    return False
-        else:
-            cnt = 0
-            while True:
-                cnt += 1
-                print(self.pid, "----> Trying ", cnt)
+        recnt = 0
+        while True:
+            self.session = requests.Session()
+            self.prev_captcha = ""
+            recnt += 1
+            print(self.pid, "----> reconnecting ", recnt)
+            try:
                 ret = self.solve(epic_id)
-                if ret:
-                    break
-            return True
+            except:
+                print(self.pid, "Sleeping")
+                time.sleep(20)
+                ret = False
+            if ret:
+                return ret
+            if recnt > 50:
+                return False
 
     def solve(self, epic_id):
         try:
