@@ -128,6 +128,7 @@ class Scrapping:
                 return ret
             if recnt > 50:
                 return False
+            time.sleep(20)
 
     def solve(self, epic_id):
         try:
