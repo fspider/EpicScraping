@@ -253,7 +253,9 @@ class Scrapping:
             html = r.content.decode('utf-8')
         except:
             print(self.pid, "Get details Failed")
-            return False, False
+            self.outwriter.writerow([self.pdf_filename, 0, "", "", "", "", "", "", "", epic_id, "", "", "", "", self.serial_no, "", ""])
+            return True, True
+
         soup=BeautifulSoup(html,'lxml')
         try:
             trs = soup.find('table', {'class':'responsive'}).find_all("tr")
