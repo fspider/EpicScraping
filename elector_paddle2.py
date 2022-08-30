@@ -245,10 +245,12 @@ class Scrapping:
         # print(data)
         # print(self.pid, "->3")
         try:
-            r = self.session.post(self.get_detail_url, data = data, headers = {}, timeout=20)
+            r = self.session.post(self.get_detail_url, data = data, headers = {}, timeout=10)
             # print(self.pid, "->4")
             html = r.content.decode('utf-8')
-        except:
+        except Exception as e:
+            print(e)
+            print(data)
             print(self.pid, "Get details Failed")
             return False, False
 
@@ -368,7 +370,7 @@ def DetectOCR():
     return text
 
 if __name__ == "__main__":
-    arr = [x for x in range(21, 41)]
+    arr = [x for x in range(71, 80)]
     nPool = len(arr)
     with Pool(nPool) as p:
         print(p.map(f, arr))
